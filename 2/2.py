@@ -12,7 +12,7 @@ forward 2
 """
         coordinates = perform_journey(input)
         self.assertEqual(coordinates["horizontal"], 15)
-        self.assertEqual(coordinates["depth"], 10)
+        self.assertEqual(coordinates["depth"], 60)
 
 def perform_journey(input):
     commands = list(map(split_words, filter(not_empty_string, input.split('\n'))))
@@ -22,7 +22,7 @@ def perform_journey(input):
         "up": up
     }
 
-    current_position = {"horizontal": 0, "depth": 0}
+    current_position = {"horizontal": 0, "depth": 0, "aim": 0}
     for direction, step in commands:
         directions[direction](current_position, int(step))
     return current_position
@@ -30,12 +30,13 @@ def perform_journey(input):
 
 def forward(coordinates, step):
     coordinates["horizontal"] += step
+    coordinates["depth"] += coordinates["aim"] * step
 
 def down(coordinates, step):
-    coordinates["depth"] += step
+    coordinates["aim"] += step
 
 def up(coordinates, step):
-    coordinates["depth"] -= step
+    coordinates["aim"] -= step
 
 def split_words(s):
     return s.split(' ')
