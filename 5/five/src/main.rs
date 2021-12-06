@@ -5,19 +5,55 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::str::FromStr;
 
+#[derive(Debug, PartialEq, Eq)]
+enum Orientation {
+    Horizonal,
+    Vertical,
+    Diagonal,
+    Unknown,
+}
+
 #[derive(Debug)]
 struct Line {
     start: (i32, i32),
     end: (i32, i32),
 }
 
-fn get_points(line: Line) -> Vec<(i32, i32)> {
-    let mut points: Vec<(i32, i32)> = vec![line.start, line.end];
-    for x in cmp::min(line.start.0, line.end.0) + 1..cmp::max(line.end.0, line.start.0) {
-        points.push((x, line.start.1));
+impl Line {
+    fn orientation(&self) -> Orientation {
+        if is_horizontal(self) {
+            return Orientation::Horizonal;
+        } else if is_vertical(self) {
+            return Orientation::Vertical;
+        } else if is_45_deg(self) {
+            return Orientation::Diagonal;
+        }
+        Orientation::Unknown
     }
-    for y in cmp::min(line.start.1, line.end.1) + 1..cmp::max(line.end.1, line.start.1) {
-        points.push((line.start.0, y));
+}
+
+fn get_points(line: Line) -> Vec<(i32, i32)> {
+    let mut points: Vec<(i32, i32)> = vec![];
+    match line.orientation() {
+        Orientation::Horizonal => {
+            for x in cmp::min(line.start.0, line.end.0)..cmp::max(line.end.0, line.start.0) + 1 {
+                points.push((x, line.start.1));
+            }
+        }
+        Orientation::Vertical => {
+            for y in cmp::min(line.start.1, line.end.1)..cmp::max(line.end.1, line.start.1) + 1 {
+                points.push((line.start.0, y));
+            }
+        }
+        Orientation::Diagonal => {
+            for x in line.start.0 - 1..line.end.0 {
+                points.push((line.start.0 + x, line.start.1 + x));
+            }
+            for x in line.end.0..line.start.0 + 1 {
+                points.push((line.start.0 - x, line.start.1 + x));
+            }
+        }
+        Orientation::Unknown => panic!("unexpected orientation"),
     }
     points
 }
@@ -42,22 +78,42 @@ fn parse_lines(input: &str) -> Vec<Line> {
     lines
 }
 
-fn main() -> std::io::Result<()> {
-    let mut file = File::open("input.txt")?;
+fn number_of_overlapping_points(input_path: &str, orientations: Vec<Orientation>) -> usize {
+    let mut file = File::open(input_path).unwrap();
     let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
+    file.read_to_string(&mut contents).unwrap();
     let all_points: Vec<Vec<(i32, i32)>> = parse_lines(&contents)
         .into_iter()
-        .filter(|line| is_horizontal_or_vertical(line))
+        .filter(|line| orientations.contains(&line.orientation()))
         .map(|line| get_points(line))
         .collect();
     let overlapping_points = get_overlapping_points(all_points);
-    println!("{:?}", overlapping_points.len());
+    println!("{:?}", overlapping_points);
+    overlapping_points.len()
+}
+
+fn main() -> std::io::Result<()> {
+    println!(
+        "{:?}",
+        number_of_overlapping_points(
+            "input.txt",
+            vec![Orientation::Horizonal, Orientation::Vertical]
+        )
+    );
     Ok(())
 }
 
-fn is_horizontal_or_vertical(line: &Line) -> bool {
-    line.start.0 == line.end.0 || line.start.1 == line.end.1
+fn is_horizontal(line: &Line) -> bool {
+    line.start.1 == line.end.1
+}
+
+fn is_vertical(line: &Line) -> bool {
+    line.start.0 == line.end.0
+}
+
+fn is_45_deg(line: &Line) -> bool {
+    cmp::max(line.end.1, line.start.1) - cmp::min(line.start.1, line.end.1)
+        == cmp::max(line.end.0, line.start.0) - cmp::min(line.start.0, line.end.0)
 }
 
 fn get_overlapping_points(points: Vec<Vec<(i32, i32)>>) -> Vec<(i32, i32)> {
@@ -87,9 +143,48 @@ fn test_parse_lines() {
 
     assert_eq!(lines[0].start, (0, 9));
     assert_eq!(lines[0].end, (5, 9));
+    assert_eq!(lines[0].orientation(), Orientation::Horizonal);
 
     assert_eq!(lines[1].start, (13, 5));
     assert_eq!(lines[1].end, (0, 0));
+    assert_eq!(lines[1].orientation(), Orientation::Unknown);
+}
+
+#[test]
+fn test_get_points_diagonal() {
+    let line = Line {
+        start: (1, 1),
+        end: (3, 3),
+    };
+    assert_eq!(line.orientation(), Orientation::Diagonal);
+    let mut points = get_points(line);
+    points.sort();
+    println!("{:?}", points);
+    assert_eq!(points, [(1, 1), (2, 2), (3, 3)]);
+}
+
+#[test]
+fn test_get_points_diagonal_2() {
+    let line = Line {
+        start: (8, 0),
+        end: (6, 2),
+    };
+    let mut points = get_points(line);
+    points.sort();
+    println!("{:?}", points);
+    assert_eq!(points, [(0, 8), (1, 7), (2, 6)]);
+}
+
+#[test]
+fn test_get_points_diagonal_3() {
+    let line = Line {
+        start: (9, 7),
+        end: (7, 9),
+    };
+    let mut points = get_points(line);
+    points.sort();
+    println!("{:?}", points);
+    assert_eq!(points, [(9, 7), (8, 8), (7, 9)]);
 }
 
 #[test]
@@ -108,7 +203,6 @@ fn test_get_points_2() {
     let mut x = [(0, 0), (0, 5)];
     x.sort();
     x.reverse();
-    println!("{:?}", x);
     let line = Line {
         end: (0, 0),
         start: (0, 5),
@@ -126,22 +220,36 @@ fn test_get_points_backwards() {
     };
     let mut points = get_points(line);
     points.sort();
-    assert_eq!(points, vec![(3, 4), (4, 4), (5, 4), (6, 4), (7, 4), (8, 4)]);
+    assert_eq!(
+        points,
+        vec![(3, 4), (4, 4), (5, 4), (6, 4), (7, 4), (8, 4), (9, 4)]
+    );
 }
 
 #[test]
-fn test_points_more() {
-    let mut file = File::open("input-test.txt").unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-    let all_points: Vec<(i32, i32)> = parse_lines(&contents)
-        .into_iter()
-        .filter(|line| is_horizontal_or_vertical(line))
-        .map(|line| get_points(line))
-        .flatten()
-        .filter(|x| x == &(4, 8))
-        .collect();
-    assert_eq!(all_points.len(), 2);
+fn test_integration_test_part_1() {
+    assert_eq!(
+        number_of_overlapping_points(
+            "input-test.txt",
+            vec![Orientation::Horizonal, Orientation::Vertical]
+        ),
+        5
+    );
+}
+
+#[test]
+fn test_integration_test_part_2() {
+    assert_eq!(
+        number_of_overlapping_points(
+            "input-test.txt",
+            vec![
+                Orientation::Horizonal,
+                Orientation::Vertical,
+                Orientation::Diagonal
+            ]
+        ),
+        12
+    );
 }
 
 #[test]
@@ -181,24 +289,43 @@ fn test_overlapping_points_x() {
 #[test]
 fn test_horizontal_vertical() {
     assert_eq!(
-        is_horizontal_or_vertical(&Line {
+        &Line {
             start: (0, 0),
             end: (0, 4)
-        }),
-        true
+        }
+        .orientation(),
+        &Orientation::Vertical
     );
     assert_eq!(
-        is_horizontal_or_vertical(&Line {
+        &Line {
             start: (0, 0),
             end: (4, 0)
-        }),
-        true
+        }
+        .orientation(),
+        &Orientation::Horizonal
     );
     assert_eq!(
-        is_horizontal_or_vertical(&Line {
+        &Line {
             start: (0, 0),
             end: (4, 4)
-        }),
-        false
+        }
+        .orientation(),
+        &Orientation::Diagonal
+    );
+    assert_eq!(
+        &Line {
+            start: (1, 1),
+            end: (3, 3)
+        }
+        .orientation(),
+        &Orientation::Diagonal
+    );
+    assert_eq!(
+        &Line {
+            start: (9, 7),
+            end: (7, 9)
+        }
+        .orientation(),
+        &Orientation::Diagonal
     );
 }
