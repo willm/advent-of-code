@@ -7,3 +7,4 @@ My solutions to the [advent of code 2021 problems](https://adventofcode.com/)
 * Problem 3 - C++          🌊
 * Problem 4 - Ruby         ♦️
 * Problem 5 (Incomplete) - Rust 🦀
+* Problem 6 (Incomplete) - Java ☕️
