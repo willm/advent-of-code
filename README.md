@@ -2,9 +2,7 @@
 
 My solutions to the [advent of code 2021 problems](https://adventofcode.com/)
 
-* Problem 1 - Javascript   ☕️
-* Problem 2 - Python       🐍
-* Problem 3 - C++          🌊
-* Problem 4 - Ruby         ♦️
-* Problem 5 (Incomplete) - Rust 🦀
-* Problem 6 (Incomplete) - Java ☕️
+| Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday |
+|:------:|:-------:|:---------:|:--------:|:------:|:--------:|:------:|
+| 29     | 30      | 1<br/>☕️<br/>Javascript️ | 2<br/>🐍<br/>Python<br/>| 3<br/>🌊<br/>C++ | 4<br/>♦<br/>Ruby | 5<br/>🦀<br/>(Incomplete)<br/>Rust |
+| 6<br/>☕️<br/>(Incomplete)<br/>Java |
