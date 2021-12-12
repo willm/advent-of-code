@@ -1,0 +1,18 @@
+{
+    "name": "willm/smoke-basin",
+    "authors": [
+        {
+            "name": "Will Munn",
+            "email": "will.munn@focusrite.com"
+        }
+    ],
+    "autoload": {
+        "classmap": [
+            "src/"
+        ]
+    },
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    }
+}
