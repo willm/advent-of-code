@@ -7,7 +7,7 @@ final class Window {
         $window_y = range($y -1, $y + 1);
         $this->window = array_map(function ($x) use($window_y, $height_map) {
             return array_map(function ($y) use ($x, $height_map): ?int {
-                if ($x < 0 || $y < 0 || $x > count($height_map) - 1 || $y > count($height_map) - 1) {
+                if ($x < 0 || $y < 0 || $x > count($height_map) - 1 || $y > count($height_map[$x]) - 1) {
                     return null;
                 }
                 return $height_map[$x][$y];
@@ -27,10 +27,10 @@ final class Window {
         $up = $this->window[0][1];
         $down = $this->window[2][1];
         $real_points = array_filter(
-            array($mid, $left, $right, $up, $down),
+            array($left, $right, $up, $down),
             function($point) { return !is_null($point); }
         );
-        return count($real_points) > 0 && $mid == min($real_points);
+        return count($real_points) > 0 && $mid < min($real_points);
     }
 }
 
@@ -48,17 +48,33 @@ final class HeightMap {
     }
 }
 
+final class RiskLevel {
+    public static function get(array $low_points, array $height_map): int {
+        return array_reduce($low_points, function($acc, $point) use ($height_map) {
+            $height = $height_map[$point[0]][$point[1]];
+            return $acc + (1 + $height);
+        }, 0);
+    }
+}
+
 final class SmokeBasin
 {
+    public static function get_total_risk_level(string $path): int {
+        $height_map = HeightMap::from_file($path);
+        $low_points = SmokeBasin::get_low_points($height_map);
+        return RiskLevel::get($low_points, $height_map);
+    }
+
     public static function get_low_points_from_file(string $path): array
     {
         $height_map = HeightMap::from_file($path);
         return SmokeBasin::get_low_points($height_map);
     }
+
     public static function get_low_points(array $height_map): array {
         $points = array();
         for ($x = 0; $x < count($height_map); $x++) {
-            for ($y = 0; $y < count($height_map); $y++) {
+            for ($y = 0; $y < count($height_map[$x]); $y++) {
                 $window = new Window($height_map, $x, $y);
                 if ($window->is_low_point($window)) {
                     array_push($points, array($x, $y));

@@ -41,6 +41,7 @@ final class SmokeBasinTest extends TestCase
             true
         );
     }
+
     public function test_get_low_points(): void
     {
         $input = array(
@@ -55,6 +56,20 @@ final class SmokeBasinTest extends TestCase
         $this->assertEquals($actual[0], array(0,1));
     }
 
+    public function test_get_low_points_when_adjacent_equal(): void
+    {
+        $input = array(
+            array(1, 1),
+            array(1, 1)
+        );
+        $actual = SmokeBasin::get_low_points($input);
+        $this->assertEquals(
+            0,
+            count($actual)
+        );
+        $this->assertEquals($actual[0], array(0,1));
+    }
+
     public function test_parse_height_map(): void
     {
         $actual = HeightMap::from_file("./input-test.txt");
@@ -63,9 +78,54 @@ final class SmokeBasinTest extends TestCase
         $this->assertEquals($actual[0][9], 0);
     }
 
-    public function test_integration_test(): void
+    public function test_parse_height_map_part1(): void
+    {
+        $actual = HeightMap::from_file("./input.txt");
+        $this->assertEquals(count($actual), 100);
+        $this->assertEquals(count($actual[0]), 100);
+    }
+
+    public function test_get_risk_level(): void
+    {
+        $height_map = array(
+            array(1,2,3),
+            array(1,2,3),
+            array(1,2,3),
+        );
+        $actual = RiskLevel::get(array(array(1,0)), $height_map);
+        $this->assertEquals($actual, 2);
+    }
+
+    public function test_get_risk_level_multiple(): void
+    {
+        $height_map = array(
+            array(1,2,3),
+            array(1,2,3),
+            array(1,2,3),
+        );
+        $actual = RiskLevel::get(array(array(1,0), array(0, 2)), $height_map);
+        $this->assertEquals($actual, 6);
+    }
+
+    public function test_low_points_from_file(): void
     {
         $actual = SmokeBasin::get_low_points_from_file("./input-test.txt");
-        var_dump($actual);
+        $this->assertEquals(count($actual), 4);
+        $this->assertEquals($actual[0], array(0, 1));
+        $this->assertEquals($actual[1], array(0, 9));
+        $this->assertEquals($actual[2], array(2, 2));
+        $this->assertEquals($actual[3], array(4, 6));
+    }
+
+    public function test_get_total_risk_level(): void
+    {
+        $actual = SmokeBasin::get_total_risk_level("./input-test.txt");
+        $this->assertEquals($actual, 15);
+    }
+
+    public function test_part_1(): void
+    {
+        $actual = SmokeBasin::get_total_risk_level("./input.txt");
+        $this->assertEquals(15, $actual);
     }
 }
