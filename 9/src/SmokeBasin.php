@@ -2,35 +2,54 @@
 
 final class Window {
     private array $window;
+    private array $height_map;
+    private ?int $x;
+    private ?int $y;
+
     function __construct($height_map, $x, $y) {
+        $this->height_map = &$height_map;
         $window_x = range($x -1, $x + 1);
         $window_y = range($y -1, $y + 1);
         $this->window = array_map(function ($x) use($window_y, $height_map) {
             return array_map(function ($y) use ($x, $height_map): ?int {
                 if ($x < 0 || $y < 0 || $x > count($height_map) - 1 || $y > count($height_map[$x]) - 1) {
-                    return null;
+                    return 9;
                 }
                 return $height_map[$x][$y];
             }, $window_y);
         }, $window_x);
+        $this->x = $x;
+        $this->y = $y;
     }
 
     public function get(): array {
         return $this->window;
     }
 
+    public function point(): array {
+        return array($this->x, $this->y);
+    }
+
+    public function is_next_to(Window $window): bool {
+        return ($this->x == $window->x - 1 && $this->y == $window->y) ||
+            ($this->x == $window->x + 1 && $this->y == $window->y) ||
+            ($this->x == $window->x && $this->y == $window->y - 1) ||
+            ($this->x == $window->x && $this->y == $window->y + 1);
+    }
+
     public function is_low_point(): bool
     {
         $mid = $this->window[1][1];
-        $left = $this->window[1][2];
-        $right = $this->window[1][0];
-        $up = $this->window[0][1];
-        $down = $this->window[2][1];
-        $real_points = array_filter(
-            array($left, $right, $up, $down),
-            function($point) { return !is_null($point); }
-        );
+        $west = $this->window[1][2];
+        $east = $this->window[1][0];
+        $north = $this->window[0][1];
+        $south = $this->window[2][1];
+        $real_points = array($west, $east, $north, $south);
         return count($real_points) > 0 && $mid < min($real_points);
+    }
+
+    public function __toString() {
+        return "$this->x,$this->y";
     }
 }
 
@@ -55,6 +74,17 @@ final class RiskLevel {
             return $acc + (1 + $height);
         }, 0);
     }
+}
+
+function containing_index(array $basins, Window $window): ?int {
+    for ($i = 0; $i < count($basins); $i++) {
+        for ($j = 0; $j < count($basins[$i]); $j++) {
+            if ($basins[$i][$j]->is_next_to($window)) {
+                return $i;
+            }
+        }
+    }
+    return null;
 }
 
 final class SmokeBasin
@@ -83,4 +113,27 @@ final class SmokeBasin
         }
         return $points;
     }
+
+    public static function get_basins($height_map): array {
+        $basins = array();
+        for ($x = 0; $x < count($height_map); $x++) {
+            for ($y = 0; $y < count($height_map[$x]); $y++) {
+                $window = new Window($height_map, $x, $y);
+                if ($height_map[$x][$y] == 9) {
+                    continue;
+                }
+                $basin = containing_index($basins, $window);
+                if (!is_null($basin)) {
+                    echo "\n adding to existing basin";
+                    array_push($basins[$basin], $window);
+                    echo "\n new size: ".count($basins[$basin]);
+                } else {
+                    echo "\n adding basin";
+                    array_push($basins, array($window));
+                }
+            }
+        }
+        return $basins;
+    }
+
 }

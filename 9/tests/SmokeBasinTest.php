@@ -10,9 +10,9 @@ final class SmokeBasinTest extends TestCase
         $this->assertEquals(
             $window->get(),
             array(
-                array(null, null, null),
-                array(null, 1, 0),
-                array(null, 2, 1)
+                array(9, 9, 9),
+                array(9, 1, 0),
+                array(9, 2, 1)
             )
         );
     }
@@ -67,7 +67,6 @@ final class SmokeBasinTest extends TestCase
             0,
             count($actual)
         );
-        $this->assertEquals($actual[0], array(0,1));
     }
 
     public function test_parse_height_map(): void
@@ -126,6 +125,65 @@ final class SmokeBasinTest extends TestCase
     public function test_part_1(): void
     {
         $actual = SmokeBasin::get_total_risk_level("./input.txt");
-        $this->assertEquals(15, $actual);
+        $this->assertEquals(496, $actual);
+    }
+
+    public function test_finding_a_basin_simple() {
+        $height_map = array(
+            array(9,9,9),
+            array(9,2,9),
+            array(9,9,9),
+        );
+        $basins = SmokeBasin::get_basins($height_map);
+
+        $this->assertEquals(count($basins), 1);
+    }
+
+    public function test_adjacent_windows() {
+        $height_map = array(
+            array(9,9,9,3),
+            array(9,2,9,9),
+            array(9,9,9,9),
+        );
+        $window = new Window($height_map, 1, 1);
+        $actual = $window->is_next_to(new Window($height_map, 3, 0));
+        $this->assertEquals(false, $actual);
+    }
+
+    public function test_finding_a_basin_multiple() {
+        $height_map = array(
+            array(9,9,9,3),
+            array(9,2,9,9),
+            array(9,9,9,9),
+        );
+        $basins = SmokeBasin::get_basins($height_map);
+
+        $this->assertEquals(count($basins), 2);
+        $this->assertEquals(count($basins[0]), 1);
+        $this->assertEquals(count($basins[1]), 1);
+    }
+
+    public function test_finding_a_basin_spanning_multiple_spots() {
+        $height_map = array(
+            array(9,9,9,9),
+            array(9,3,7,9),
+            array(9,9,9,9),
+        );
+        $basins = SmokeBasin::get_basins($height_map);
+
+        $this->assertEquals(1, count($basins));
+        $this->assertEquals(2, count($basins[0]));
+        $this->assertEquals(array_map(function ($window) {
+            return $window->point();
+        }, $basins[0]), array(
+            array(1, 1),
+            array(1, 2)
+        ));
+    }
+
+    public function test_part_2() {
+        $height_map = HeightMap::from_file("./input-test.txt");
+        $basins = SmokeBasin::get_basins($height_map);
+        $this->assertEquals(4, count($basins));
     }
 }
