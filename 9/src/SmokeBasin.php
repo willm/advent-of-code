@@ -87,6 +87,48 @@ function containing_index(array $basins, Window $window): ?int {
     return null;
 }
 
+final class Basin {
+    private $windows;
+    function __construct($windows) {
+        $this->windows = $windows;
+    }
+
+    public function get_windows() {
+        return $this->windows;
+    }
+
+    public function is_connecting(Basin $other): bool {
+        foreach($this->get_windows() as $a) {
+            foreach($other->get_windows() as $b) {
+                if ($a->is_next_to($b)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static function merge($basins) {
+        $points = array();
+        foreach($basins as $basin) {
+            foreach($basin->get_windows() as $window) {
+                if (!in_array($window, $points)) {
+                    array_push($points, $window);
+                }
+            }
+        }
+        return new Basin($points);
+    }
+    public function __toString() {
+        sort($this->windows);
+        $str = "";
+        foreach($this->windows as $w){
+            $str = "$str|$w";
+        }
+        return $str;
+    }
+}
+
 final class SmokeBasin
 {
     public static function get_total_risk_level(string $path): int {
@@ -115,25 +157,41 @@ final class SmokeBasin
     }
 
     public static function get_basins($height_map): array {
-        $basins = array();
+        $basin_windows = array();
         for ($x = 0; $x < count($height_map); $x++) {
             for ($y = 0; $y < count($height_map[$x]); $y++) {
                 $window = new Window($height_map, $x, $y);
                 if ($height_map[$x][$y] == 9) {
                     continue;
                 }
-                $basin = containing_index($basins, $window);
+                $basin = containing_index($basin_windows, $window);
                 if (!is_null($basin)) {
-                    echo "\n adding to existing basin";
-                    array_push($basins[$basin], $window);
-                    echo "\n new size: ".count($basins[$basin]);
+                    //echo "\n adding to existing basin";
+                    array_push($basin_windows[$basin], $window);
+                    //echo "\n new size: ".count($basins[$basin]);
                 } else {
-                    echo "\n adding basin";
-                    array_push($basins, array($window));
+                    //echo "\n adding basin";
+                    array_push($basin_windows, array($window));
                 }
             }
         }
-        return $basins;
+        $basins = array_map(function ($basin) {
+            return new Basin($basin);
+        }, $basin_windows);
+
+        $basins = array_reduce($basins, function($grouped, Basin $basin) use ($basins) {
+            $connecting_basins = [$basin, ...array_filter($basins, function($basin_a) use($basin) {
+                return $basin->is_connecting($basin_a);
+            })];
+            array_push($grouped, $connecting_basins);
+            return $grouped;
+        }, array());
+
+        $basins = array_map(function ($group) {
+            return Basin::merge($group);
+        }, $basins);
+
+        return array_unique($basins);
     }
 
 }
