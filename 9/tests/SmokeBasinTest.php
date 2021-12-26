@@ -198,6 +198,21 @@ final class SmokeBasinTest extends TestCase
         );
     }
 
+    public function test_deduping_basins() {
+        $height_map = array(
+            array(9,9,2,9),
+            array(9,3,7,9),
+            array(9,9,9,9),
+        );
+        $basins = [
+            new Basin([new Window($height_map, 0, 2), new Window($height_map, 1, 2)]),
+            new Basin([new Window($height_map, 1, 1)]),
+        ];
+
+        $merged = merge($basins, $height_map);
+        $this->assertEquals(1, count($merged));
+    }
+
     public function test_finding_a_basin_forming_a_corner() {
         $height_map = array(
             array(9,9,2,9),
@@ -208,13 +223,17 @@ final class SmokeBasinTest extends TestCase
 
         $this->assertEquals(1, count($basins));
         $this->assertEquals(3, count($basins[0]->get_windows()));
-        $this->assertEquals(array_map(function ($window) {
+        $actual = array_map(function ($window) {
             return $window->point();
-        }, $basins[0]->get_windows()), array(
+        }, $basins[0]->get_windows());
+        sort($actual);
+        $expected = array(
             array(1, 2),
             array(1, 1),
             array(0, 2),
-        ));
+        );
+        sort($expected);
+        $this->assertEquals($actual, $expected);
     }
 
     public function test_in_array() {
@@ -229,53 +248,4 @@ final class SmokeBasinTest extends TestCase
         $basins = SmokeBasin::get_basins($height_map);
         $this->assertEquals(4, count($basins));
     }
-
-    public function test_merge_algorigthm() {
-        $basins = [[1,2],[2],[3], [3,4]];
-        $merged = [$basins[0]];
-        for ($i = 0; $i < count($basins); $i++) {
-            $basin = $basins[$i];
-            $exists_in_index = null;
-            for ($j = 0; $j < count($merged); $j++) {
-                $merged_basin = $merged[$j];
-                $exists = array_some($basin, function($point) use($merged_basin) {
-                    return in_array($point, $merged_basin);
-                });
-                if ($exists) {
-                    $exists_in_index = $j;
-                }
-            }
-            if (!is_null($exists_in_index)) {
-                $merged[$exists_in_index] = unique($merged[$exists_in_index], $basin);
-            } else {
-                array_push($merged, $basin);
-            }
-        }
-        $expected = [[1,2], [3,4]];
-        $this->assertEquals(count($merged), 2);
-        $this->assertEquals($expected, $merged);
-    }
-}
-
-function unique(array $a, array $b) {
-    $b_not_in_a = array_filter($b, function($element) use($a) {
-        return !in_array($element, $a);
-    });
-    return [...$a, ...$b_not_in_a];
-}
-
-function array_any(array $array, Callable $predicate) {
-    return count(array_filter($array, $predicate)) > 0;
-}
-
-function array_every(array $array, Callable $predicate): bool {
-    return array_reduce($array, function($every, $el) use ($predicate) {
-        return $every && $predicate($el);
-    }, true);
-}
-
-function array_some(array $array, Callable $predicate): bool {
-    return array_reduce($array, function($every, $el) use ($predicate) {
-        return $every || $predicate($el);
-    }, false);
 }

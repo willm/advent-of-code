@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
 final class Window {
-    private array $window;
-    private array $height_map;
-    private ?int $x;
-    private ?int $y;
+    private $window;
+    private $height_map;
+    private $x;
+    private $y;
 
     function __construct($height_map, $x, $y) {
         $this->height_map = &$height_map;
@@ -119,6 +119,7 @@ final class Basin {
         }
         return new Basin($points);
     }
+
     public function __toString() {
         sort($this->windows);
         $str = "";
@@ -179,19 +180,37 @@ final class SmokeBasin
             return new Basin($basin);
         }, $basin_windows);
 
-        $basins = array_reduce($basins, function($grouped, Basin $basin) use ($basins) {
-            $connecting_basins = [$basin, ...array_filter($basins, function($basin_a) use($basin) {
-                return $basin->is_connecting($basin_a);
-            })];
-            array_push($grouped, $connecting_basins);
-            return $grouped;
-        }, array());
-
-        $basins = array_map(function ($group) {
-            return Basin::merge($group);
-        }, $basins);
-
-        return array_unique($basins);
+        return merge($basins, $height_map);
     }
 
+}
+
+function merge($basins, $height_map) {
+    $merged = [];
+    $indexes_to_merge = [];
+    for ($i = 0; $i < count($basins); $i++) {
+        for ($j = 0; $j < count($basins); $j++) {
+            $indexes = [$i, $j];
+            sort($indexes);
+            if ($i != $j && !in_array($indexes, $indexes_to_merge) && $basins[$i]->is_connecting($basins[$j])) {
+                array_push($indexes_to_merge, $indexes);
+            }
+        }
+    }
+    for ($i = 0; $i < count($basins); $i++) {
+        $pair = null;
+        foreach($indexes_to_merge as $merge_pair) {
+            if (in_array($i, $merge_pair)) {
+                $pair = $merge_pair;
+            }
+        }
+        if (is_null($pair)) {
+            array_push($merged, $basins[$i]);
+        }
+    }
+
+    foreach($indexes_to_merge as $merge_pair) {
+        array_push($merged, Basin::merge([$basins[$merge_pair[0]], $basins[$merge_pair[1]]]));
+    }
+    return $merged;
 }
