@@ -204,33 +204,20 @@ function multiple_of_3_largest($basins) {
 
 function merge($basins, $height_map) {
     $merged = [];
-    $indexes_to_merge = [];
     for ($i = 0; $i < count($basins); $i++) {
         for ($j = 0; $j < count($basins); $j++) {
             $indexes = [$i, $j];
             sort($indexes);
-            if ($i != $j && !in_array($indexes, $indexes_to_merge) && $basins[$i]->is_connecting($basins[$j])) {
-                array_push($indexes_to_merge, $indexes);
+            if ($i != $j && $basins[$i]->is_connecting($basins[$j])) {
+                array_push($merged, Basin::merge([$basins[$i], $basins[$j]]));
+                for($k = 0; $k < count($basins); $k++) {
+                    if ($k != $i && $k != $j) {
+                        array_push($merged, $basins[$k]);
+                    }
+                }
+                return merge($merged, $height_map);
             }
         }
     }
-    for ($i = 0; $i < count($basins); $i++) {
-        $pair = null;
-        foreach($indexes_to_merge as $merge_pair) {
-            if (in_array($i, $merge_pair)) {
-                $pair = $merge_pair;
-            }
-        }
-        if (is_null($pair)) {
-            array_push($merged, $basins[$i]);
-        }
-    }
-
-    foreach($indexes_to_merge as $merge_pair) {
-        array_push($merged, Basin::merge([$basins[$merge_pair[0]], $basins[$merge_pair[1]]]));
-    }
-    if (count($indexes_to_merge) > 0) {
-        return merge($merged, $height_map);
-    }
-    return $merged;
+    return $basins;
 }

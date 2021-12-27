@@ -247,5 +247,7 @@ final class SmokeBasinTest extends TestCase
         $height_map = HeightMap::from_file("./input-test.txt");
         $basins = SmokeBasin::get_basins($height_map);
         $this->assertEquals(4, count($basins));
+
+        $this->assertEquals(multiple_of_3_largest($basins), 1134);
     }
 }
