@@ -185,6 +185,23 @@ final class SmokeBasin
 
 }
 
+function multiple_of_3_largest($basins) {
+    function by_window_count($a, $b) {
+        if (count($a->get_windows()) == count($b->get_windows())) {
+            return 0;
+        }
+        return (count($a->get_windows()) < count($b->get_windows())) ? 1 : -1;
+    }
+    usort($basins, 'by_window_count');
+    return array_reduce(array_slice($basins, 0, 3), function ($size, $basin) {
+        $c = count($basin->get_windows());
+        if (is_null($size)) {
+            return count($basin->get_windows());
+        }
+        return $size * count($basin->get_windows());
+    }, null);
+}
+
 function merge($basins, $height_map) {
     $merged = [];
     $indexes_to_merge = [];
@@ -211,6 +228,9 @@ function merge($basins, $height_map) {
 
     foreach($indexes_to_merge as $merge_pair) {
         array_push($merged, Basin::merge([$basins[$merge_pair[0]], $basins[$merge_pair[1]]]));
+    }
+    if (count($indexes_to_merge) > 0) {
+        return merge($merged, $height_map);
     }
     return $merged;
 }
