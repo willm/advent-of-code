@@ -250,4 +250,11 @@ final class SmokeBasinTest extends TestCase
 
         $this->assertEquals(multiple_of_3_largest($basins), 1134);
     }
+
+    /*public function test_part_final() {
+        $height_map = HeightMap::from_file("./input.txt");
+        $basins = SmokeBasin::get_basins($height_map);
+
+        //echo(multiple_of_3_largest($basins));
+    }*/
 }

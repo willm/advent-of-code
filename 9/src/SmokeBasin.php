@@ -6,7 +6,7 @@ final class Window {
     private $x;
     private $y;
 
-    function __construct($height_map, $x, $y) {
+    function __construct(&$height_map, $x, $y) {
         $this->height_map = &$height_map;
         $window_x = range($x -1, $x + 1);
         $window_y = range($y -1, $y + 1);
@@ -68,7 +68,7 @@ final class HeightMap {
 }
 
 final class RiskLevel {
-    public static function get(array $low_points, array $height_map): int {
+    public static function get(array $low_points, array &$height_map): int {
         return array_reduce($low_points, function($acc, $point) use ($height_map) {
             $height = $height_map[$point[0]][$point[1]];
             return $acc + (1 + $height);
@@ -144,7 +144,7 @@ final class SmokeBasin
         return SmokeBasin::get_low_points($height_map);
     }
 
-    public static function get_low_points(array $height_map): array {
+    public static function get_low_points(array &$height_map): array {
         $points = array();
         for ($x = 0; $x < count($height_map); $x++) {
             for ($y = 0; $y < count($height_map[$x]); $y++) {
@@ -157,7 +157,7 @@ final class SmokeBasin
         return $points;
     }
 
-    public static function get_basins($height_map): array {
+    public static function get_basins(&$height_map): array {
         $basin_windows = array();
         for ($x = 0; $x < count($height_map); $x++) {
             for ($y = 0; $y < count($height_map[$x]); $y++) {
@@ -202,12 +202,10 @@ function multiple_of_3_largest($basins) {
     }, null);
 }
 
-function merge($basins, $height_map) {
+function merge($basins, &$height_map) {
     $merged = [];
     for ($i = 0; $i < count($basins); $i++) {
         for ($j = 0; $j < count($basins); $j++) {
-            $indexes = [$i, $j];
-            sort($indexes);
             if ($i != $j && $basins[$i]->is_connecting($basins[$j])) {
                 array_push($merged, Basin::merge([$basins[$i], $basins[$j]]));
                 for($k = 0; $k < count($basins); $k++) {
@@ -220,4 +218,11 @@ function merge($basins, $height_map) {
         }
     }
     return $basins;
+}
+
+
+if (count($argv) > 1) {
+    $height_map = HeightMap::from_file($argv[1]);
+    $basins = SmokeBasin::get_basins($height_map);
+    echo(multiple_of_3_largest($basins));
 }
