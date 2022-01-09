@@ -15,21 +15,19 @@ type Digit struct {
 }
 
 var digits = []Digit{
-	{6, 0}, //
+	{6, 0},
 	{2, 1},
-	{5, 2}, //
-	{5, 3}, //
+	{5, 2},
+	{5, 3},
 	{4, 4},
-	{5, 5}, //
-	{6, 6}, //
+	{5, 5},
+	{6, 6},
 	{3, 7},
 	{7, 8},
-	{6, 9}, //
-
-	// 6 segments 0, 6, 9
+	{6, 9},
 }
 
-func find(digits []Digit, predicate func(Digit) bool) Digit {
+func Find(digits []Digit, predicate func(Digit) bool) Digit {
 	for _, digit := range digits {
 		if predicate(digit) {
 			return digit
@@ -38,7 +36,7 @@ func find(digits []Digit, predicate func(Digit) bool) Digit {
 	return Digit{}
 }
 
-func contains(numbers []int, needle int) bool {
+func Contains(numbers []int, needle int) bool {
 	for _, number := range numbers {
 		if number == needle {
 			return true
@@ -47,7 +45,7 @@ func contains(numbers []int, needle int) bool {
 	return false
 }
 
-func sortString(in string) string {
+func SortString(in string) string {
 	groupAsSlice := strings.Split(in, "")
 	sort.Slice(groupAsSlice, func(a, b int) bool {
 		return groupAsSlice[a] < groupAsSlice[b]
@@ -55,17 +53,85 @@ func sortString(in string) string {
 	return strings.Join(groupAsSlice, "")
 }
 
+func KeyForValue(m map[string]int, needle int) (val string, ok bool) {
+	for k, v := range m {
+		if v == needle {
+			return k, true
+		}
+	}
+	return "", false
+}
+
+func Matches(haystack string, predicate func(string) bool) int {
+	matches := 0
+	chars := strings.Split(haystack, "")
+	for _, char := range chars {
+		if predicate(char) {
+			matches += 1
+		}
+	}
+	return matches
+}
+
 func ParseMappings(input []string) map[string]int {
 	mappings := make(map[string]int)
 	for _, wires := range input {
-		if contains([]int{2, 3, 4, 7}, len(wires)) {
+		if Contains([]int{2, 3, 4, 7}, len(wires)) {
 			withLength := func(d Digit) bool {
 				return d.SegmentCount == len(wires)
 			}
-			mappings[sortString(wires)] = find(digits, withLength).Value
+			mappings[SortString(wires)] = Find(digits, withLength).Value
+		}
+	}
+	for _, wires := range input {
+		segments := SortString(wires)
+		if len(wires) == 5 {
+			mappings[segments], _ = Find5SegmentMapping(mappings, segments)
+		}
+		if len(wires) == 6 {
+			mappings[segments], _ = Find6SegmentMapping(mappings, segments)
 		}
 	}
 	return mappings
+}
+
+func Find5SegmentMapping(mappings map[string]int, segments string) (result int, ok bool) {
+	seven, _ := KeyForValue(mappings, 7)
+	inDigit := func(segment string) bool {
+		return strings.Contains(segments, segment)
+	}
+	segmentsInSeven := Matches(seven, inDigit)
+
+	if segmentsInSeven == 3 {
+		return 3, true
+	}
+	four, _ := KeyForValue(mappings, 4)
+	segmentsInFour := Matches(four, inDigit)
+
+	if segmentsInFour == 2 {
+		return 2, true
+	}
+	if segmentsInFour == 3 {
+		return 5, true
+	}
+	return 0, false
+}
+
+func Find6SegmentMapping(mappings map[string]int, segments string) (result int, ok bool) {
+	one, _ := KeyForValue(mappings, 1)
+	inDigit := func(segment string) bool {
+		return strings.Contains(segments, segment)
+	}
+	segmentsInOne := Matches(one, inDigit)
+	if segmentsInOne == 1 {
+		return 6, true
+	}
+	four, _ := KeyForValue(mappings, 4)
+	segmentsInFour := Matches(four, inDigit)
+	if segmentsInFour == 4 {
+		return 9, true
+	}
+	return 0, false
 }
 
 func ParseLine(line string) string {
@@ -78,7 +144,7 @@ func ParseLine(line string) string {
 	mappings := ParseMappings(strings.Split(parts[0], " "))
 	outputSegments := strings.Split(strings.Trim(parts[1], " "), " ")
 	for _, segments := range outputSegments {
-		i, ok := mappings[sortString(segments)]
+		i, ok := mappings[SortString(segments)]
 		if ok {
 			result = result + strconv.Itoa(i)
 		}
@@ -101,5 +167,11 @@ func main() {
 		log.Fatal(err)
 	}
 	input := string(content)
-	fmt.Println(len(Parse(input)))
+	rawValues := Parse(input)
+	sum := int64(0)
+	for _, reading := range rawValues {
+		number, _ := strconv.ParseInt(reading, 10, 0)
+		sum += number
+	}
+	fmt.Println(sum)
 }
