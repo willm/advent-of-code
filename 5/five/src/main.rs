@@ -35,22 +35,18 @@ impl Line {
 fn get_points(line: Line) -> Vec<(i32, i32)> {
     let mut points: Vec<(i32, i32)> = vec![];
     match line.orientation() {
-        Orientation::Horizonal => {
+        Orientation::Horizonal | Orientation::Diagonal => {
+            let x_diff = line.start.0 - line.end.0;
+            let y_diff = line.start.1 - line.end.1;
+            let gradient = y_diff / x_diff;
             for x in cmp::min(line.start.0, line.end.0)..cmp::max(line.end.0, line.start.0) + 1 {
-                points.push((x, line.start.1));
+                let y = (gradient * (x - line.start.0)) + line.start.1;
+                points.push((x, y))
             }
         }
         Orientation::Vertical => {
             for y in cmp::min(line.start.1, line.end.1)..cmp::max(line.end.1, line.start.1) + 1 {
                 points.push((line.start.0, y));
-            }
-        }
-        Orientation::Diagonal => {
-            for x in line.start.0 - 1..line.end.0 {
-                points.push((line.start.0 + x, line.start.1 + x));
-            }
-            for x in line.end.0..line.start.0 + 1 {
-                points.push((line.start.0 - x, line.start.1 + x));
             }
         }
         Orientation::Unknown => panic!("unexpected orientation"),
@@ -97,7 +93,11 @@ fn main() -> std::io::Result<()> {
         "{:?}",
         number_of_overlapping_points(
             "input.txt",
-            vec![Orientation::Horizonal, Orientation::Vertical]
+            vec![
+                Orientation::Horizonal,
+                Orientation::Vertical,
+                Orientation::Diagonal
+            ]
         )
     );
     Ok(())
@@ -172,7 +172,7 @@ fn test_get_points_diagonal_2() {
     let mut points = get_points(line);
     points.sort();
     println!("{:?}", points);
-    assert_eq!(points, [(0, 8), (1, 7), (2, 6)]);
+    assert_eq!(points, [(6, 2), (7, 1), (8, 0)]);
 }
 
 #[test]
@@ -181,10 +181,11 @@ fn test_get_points_diagonal_3() {
         start: (9, 7),
         end: (7, 9),
     };
+
     let mut points = get_points(line);
     points.sort();
     println!("{:?}", points);
-    assert_eq!(points, [(9, 7), (8, 8), (7, 9)]);
+    assert_eq!(points, [(7, 9), (8, 8), (9, 7)]);
 }
 
 #[test]
