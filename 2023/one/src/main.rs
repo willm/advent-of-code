@@ -1,4 +1,4 @@
-use fancy_regex::Regex;
+use regex::Regex;
 use std::fs;
 
 fn main() {
@@ -20,20 +20,44 @@ fn part_two(input: &str) -> Result<i32, String> {
         ("nine", 9),
     ];
     let lines = input.split("\n").collect::<Vec<&str>>();
-    let re = Regex::new(r"(?=(\d|one|two|three|four|five|six|seven|eight|nine))").unwrap();
+    let re = Regex::new(r"(\d|one|two|three|four|five|six|seven|eight|nine)").unwrap();
+    let reverse_re = Regex::new(r"(\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin)").unwrap();
     let calibration_sum = lines
         .iter()
         .map(|line| {
             let line_digits: Vec<i32> = re
                 .captures_iter(line)
                 .map(|c| {
-                    let digit = c.unwrap().get(0).unwrap().as_str();
-                    println!("{:?}", digit);
+                    let (x, [digit]) = c.extract();
+                    println!("x is {:?}", x);
                     if let Ok(result) = digit.parse::<i32>() {
                         return result;
                     }
                     for digit_name in digit_names {
                         if digit_name.0 == digit {
+                            return digit_name.1;
+                        }
+                    }
+                    panic!("No digits found");
+                })
+                .collect();
+
+            let reverse_line_digits: Vec<i32> = reverse_re
+                .captures_iter(
+                    String::from(*line)
+                        .chars()
+                        .rev()
+                        .collect::<String>()
+                        .as_ref(),
+                )
+                .map(|c| {
+                    let (x, [digit]) = c.extract();
+                    println!("x is {:?}", x);
+                    if let Ok(result) = digit.parse::<i32>() {
+                        return result;
+                    }
+                    for digit_name in digit_names {
+                        if digit_name.0.chars().rev().collect::<String>() == digit {
                             return digit_name.1;
                         }
                     }
@@ -47,7 +71,7 @@ fn part_two(input: &str) -> Result<i32, String> {
                 return 0;
             }
             let first_digit = line_digits.first().unwrap();
-            let last_digit = line_digits.last().unwrap();
+            let last_digit = reverse_line_digits.first().unwrap();
             println!("{}{}", first_digit, last_digit);
             format!("{}{}", first_digit, last_digit)
                 .parse::<i32>()
@@ -58,7 +82,6 @@ fn part_two(input: &str) -> Result<i32, String> {
     return Ok(calibration_sum);
 }
 
-/*
 fn get_result(input: &str) -> Result<i32, String> {
     let lines = input.split("\n").collect::<Vec<&str>>();
     let re = Regex::new(r"(\d)").unwrap();
@@ -98,7 +121,6 @@ treb7uchet#";
     let answer = get_result(input).unwrap();
     assert_eq!(result, answer);
 }
-*/
 
 #[test]
 fn part_2_example_works() {
