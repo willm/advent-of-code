@@ -7,7 +7,8 @@ fn main() {
         fs::read_to_string("./input.txt").expect("Should have been able to read the file");
 
     let sum = sum_part_numbers(&contents);
-    println!("{}", sum);
+    let gear_ratio = get_gear_ratio(&contents);
+    println!("part 1 {} part 2 {}", sum, gear_ratio);
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -17,10 +18,11 @@ struct NumberBlock {
     value: i32,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 struct Symbol {
     y: usize,
     x: usize,
+    value: String,
 }
 
 fn split_lines(input: &str) -> Vec<&str> {
@@ -40,7 +42,11 @@ fn parse_symbols(lines: &Vec<&str>) -> Vec<Symbol> {
                 .captures_iter(line)
                 .map(|c| {
                     let m = c.get(1).unwrap();
-                    Symbol { y: i, x: m.start() }
+                    Symbol {
+                        y: i,
+                        x: m.start(),
+                        value: String::from(m.as_str()),
+                    }
                 })
                 .collect::<Vec<Symbol>>()
         })
@@ -93,6 +99,25 @@ fn sum_part_numbers(input: &str) -> i32 {
         .iter()
         .filter(|n| is_part(n, &symbols))
         .fold(0, |sum, n| n.value + sum)
+}
+
+fn get_gear_ratio(input: &str) -> i32 {
+    let lines = split_lines(input);
+    let number_blocks = parse_number_blocks(&lines);
+    let symbols = parse_symbols(&lines);
+    symbols
+        .iter()
+        .filter(|s| s.value == "*")
+        .map(|s| {
+            number_blocks
+                .iter()
+                .filter(|n| is_part(n, &vec![s.clone()]))
+                .map(|n| n.value)
+                .collect::<Vec<i32>>()
+        })
+        .filter(|nbs| nbs.len() == 2)
+        .map(|gear_parts| gear_parts.iter().fold(1, |product, value| product * value))
+        .fold(0, |sum, n| n + sum)
 }
 
 #[test]
@@ -178,7 +203,14 @@ fn parse_a_symbol() {
     let symbols = parse_symbols(&vec![input]);
     assert_eq!(symbols.len(), 1);
     let symbol = symbols.get(0).unwrap();
-    assert_eq!(symbol, &Symbol { x: 4, y: 0 });
+    assert_eq!(
+        symbol,
+        &Symbol {
+            x: 4,
+            y: 0,
+            value: String::from("$")
+        }
+    );
 }
 
 #[test]
@@ -187,14 +219,32 @@ fn parse_multiple_symbols() {
     let symbols = parse_symbols(&input);
     assert_eq!(symbols.len(), 2);
     let symbol_1 = symbols.get(0).unwrap();
-    assert_eq!(symbol_1, &Symbol { x: 4, y: 0 });
+    assert_eq!(
+        symbol_1,
+        &Symbol {
+            x: 4,
+            y: 0,
+            value: String::from("$")
+        }
+    );
     let symbol_2 = symbols.get(1).unwrap();
-    assert_eq!(symbol_2, &Symbol { x: 5, y: 1 });
+    assert_eq!(
+        symbol_2,
+        &Symbol {
+            x: 5,
+            y: 1,
+            value: String::from("%")
+        }
+    );
 }
 
 #[test]
 fn testing_if_a_number_block_is_a_part_symbol_to_the_left() {
-    let symbols = vec![Symbol { x: 0, y: 0 }];
+    let symbols = vec![Symbol {
+        x: 0,
+        y: 0,
+        value: String::from("*"),
+    }];
     let number_block = NumberBlock {
         x: (1..4),
         y: 0,
@@ -206,7 +256,11 @@ fn testing_if_a_number_block_is_a_part_symbol_to_the_left() {
 
 #[test]
 fn testing_if_a_number_block_is_a_part_symbol_to_the_right() {
-    let symbols = vec![Symbol { x: 3, y: 0 }];
+    let symbols = vec![Symbol {
+        x: 3,
+        y: 0,
+        value: String::from("*"),
+    }];
     let number_block = NumberBlock {
         x: (0..3),
         y: 0,
@@ -218,7 +272,11 @@ fn testing_if_a_number_block_is_a_part_symbol_to_the_right() {
 
 #[test]
 fn testing_if_a_number_block_is_a_part_symbol_below() {
-    let symbols = vec![Symbol { x: 0, y: 1 }];
+    let symbols = vec![Symbol {
+        x: 0,
+        y: 1,
+        value: String::from("*"),
+    }];
     let number_block = NumberBlock {
         x: (0..3),
         y: 0,
@@ -230,7 +288,11 @@ fn testing_if_a_number_block_is_a_part_symbol_below() {
 
 #[test]
 fn testing_if_a_number_block_is_a_part_symbol_above() {
-    let symbols = vec![Symbol { x: 0, y: 1 }];
+    let symbols = vec![Symbol {
+        x: 0,
+        y: 1,
+        value: String::from("*"),
+    }];
     let number_block = NumberBlock {
         x: (0..3),
         y: 0,
@@ -242,7 +304,11 @@ fn testing_if_a_number_block_is_a_part_symbol_above() {
 
 #[test]
 fn testing_if_a_number_block_is_a_part_symbol_diagonal_top_left() {
-    let symbols = vec![Symbol { x: 0, y: 0 }];
+    let symbols = vec![Symbol {
+        x: 0,
+        y: 0,
+        value: String::from("*"),
+    }];
     let number_block = NumberBlock {
         x: (1..4),
         y: 1,
@@ -254,7 +320,11 @@ fn testing_if_a_number_block_is_a_part_symbol_diagonal_top_left() {
 
 #[test]
 fn testing_if_a_number_block_is_a_part_symbol_diagonal_top_right() {
-    let symbols = vec![Symbol { x: 3, y: 0 }];
+    let symbols = vec![Symbol {
+        x: 3,
+        y: 0,
+        value: String::from("*"),
+    }];
     let number_block = NumberBlock {
         x: (0..3),
         y: 1,
@@ -265,6 +335,17 @@ fn testing_if_a_number_block_is_a_part_symbol_diagonal_top_right() {
 }
 
 #[test]
-fn d() {
-    assert!((0..3).contains(&0));
+fn getting_gear_ratio() {
+    let input = r#"467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598.."#;
+    let ratio = get_gear_ratio(input);
+    assert_eq!(ratio, 467835);
 }
